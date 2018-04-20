@@ -1,0 +1,19 @@
+
+ #include <iostream>
+ #include <time.h>
+#include <math.h>
+
+
+
+int main() {
+    timespec tiempoStruct;
+    long  incr = 0;
+    clockid_t reloj = 2;
+    for(int i = 0; i < 10000; i++){
+     		clock_gettime(reloj, &tiempoStruct);
+   		 incr += tiempoStruct.tv_nsec;
+   		 incr +=(long)pow(tiempoStruct.tv_sec,3);
+   	 }
+    std::cout << incr<< std::endl;
+   return 0;
+}

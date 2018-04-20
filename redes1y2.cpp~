@@ -1,0 +1,17 @@
+ #include <stdio.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <errno.h>
+ #include <iostream>
+ #include <string.h>
+ #include <iomanip>
+
+int main() {
+   /* Comprobar la ocurrencia de error y notificarlo con la llamada perror(3) */      
+  int a = setuid(2);
+
+  if (a == -1) std::cout << perror("errno") << endl;
+
+    return 1;
+}
+
