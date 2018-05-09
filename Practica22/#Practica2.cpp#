@@ -17,18 +17,21 @@ int main(int argc, char **argv){
   hints.ai_family = AF_INET;                             //Podría ser AF_UNSPEC
   hints.ai_socktype = SOCK_DGRAM;                        // DGRAM siempre es UDP
 
+  //Recibe: const char * Nodo, const char * service, addrinfo *hints, addrinfo**res 
+  //nodo = Host de internet, service = servicio
   int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
 
   if (rc != 0) {
     std::cout << "error getaddrinfo(): " << gai_strerror(rc) << std::endl;
     return -1;
   }
-
-  int sd = socket(AF_INET ,res->SOCK_DGRAM, 0);
+  //Buscar ejemplos de esta mierda
+  int sd = socket(res->ai_addr ,res->ai_addrlen, 0);
   
   bind (sd, res->ai_addr, res->ai_addrlen);
 
-  //COMENTAR A PARTIR DE AQUI
+  freeaddrinfo(res);
+
   while (true){
 
     char buf[256];               //
