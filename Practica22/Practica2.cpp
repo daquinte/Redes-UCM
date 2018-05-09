@@ -10,48 +10,41 @@
 //Ej: Redes 2 localhost [ip? puerto?]
 int main(int argc, char **argv){
 
-  struct addrinfo hints;   //Sin puntero porque lo vamos a inicializar
-  struct addrinfo *res;   
+  struct addrinfo hints;   //Sin puntero porque lo vamos a inicializar, y no queremos memoria dinamica
+  struct addrinfo *res;    //Aquí si nos interesa
 
   memset((void*) &hints, '\0', sizeof(struct addrinfo)); //Inicializa a 0 el struct enterito
-  hints.ai_family = AF_INET;                             //Podría ser AF_UNSPEC
+  hints.ai_family = AF_INET;                             //Podría ser AF_UNSPEC, pero ponemos AF_INET para IPv4
   hints.ai_socktype = SOCK_DGRAM;                        // DGRAM siempre es UDP
 
   //Recibe: const char * Nodo, const char * service, addrinfo *hints, addrinfo**res 
   //nodo = Host de internet, service = servicio
+  //Se genera una lista enlazada de structs, y a su vez se inicializa el puntero a res
   int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
 
   if (rc != 0) {
     std::cout << "error getaddrinfo(): " << gai_strerror(rc) << std::endl;
     return -1;
   }
-  //Buscar ejemplos de esta mierda
-  int sd = socket(res->ai_addr ,res->ai_addrlen, 0);
   
-  bind (sd, res->ai_addr, res->ai_addrlen);
+  // Esto es para las conexiones de mensajes y demás. Realmente no lo necesitamos ahora
+  //int sd = socket(res->ai_family ,res->ai_socktype, 0);
+  //bind (sd, res->ai_addr, res->ai_addrlen);
+  //-----------------------------------------------------------------
 
-  freeaddrinfo(res);
-
-  while (true){
-
-    char buf[256];               //
-    struct sockaddr src_addr;    // El socket "source"
-    socklen_t addrlen;           // El socket de destino (?)
-
-    char host [NI_MAXHOST];      
-    char serv [NI_MAXSERV];
+  //Creamos otro addrinfo al que damos el valor de res para no modificar este, y vamos sacando los nombres
+  for(struct addrinfo* tmp = res; tmp !=0; tmp = tmp->ai_next){
+        //Máximas longitudes de host y serv(que ya te da el SO), y arrays de chars
+        char host[NI_MAXHOST];
+	char serv [NI_MAXSERV];
+	getnameinfo(tmp->ai_addr, tmp->ai_addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV); 
+	  
+	std::cout << host << "   " << tmp->ai_family << "   " << tmp->ai_socktype << std::endl;
 		
-    size_t s = recvfrom(sd, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
-
-    getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
-
-    std::cout << "Conexion: " << host << ":" <<	serv << "\n";
-    std::cout << "Mensaje: " << buf << std::endl;
-
-    sendto(/*En este caso solo hay un canal*/ sd, buf, s, 0, &src_addr, addrlen);
-
-  }
-
+    
+}
+  //Eliminamos memoria dinamica
+  freeaddrinfo(res);
 
   return 0;
 
