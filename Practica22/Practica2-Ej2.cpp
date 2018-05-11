@@ -1,10 +1,34 @@
 #include <sys/socket.h>
 #include <sys/types.h>
+
 #include <netdb.h>
 #include <string.h>
 #include <iostream>
+#include <time.h>
 
 //int socket(int domain, int type, int protocol);
+
+//Tenemos que separar esto en dos metodos independientes y tal
+void DameHora(){
+ time_t tiempo;
+  struct tm * strTiempo;
+  char buffer [80];         //string donde se almacena la cadena del strftime
+
+  time (&tiempo);
+  strTiempo = localtime (&tiempo); //Tiempo local
+  //Año
+  strftime (buffer,80,"Estamos en el año %Y.",strTiempo);
+  std::cout << buffer << std::endl;
+  //Día y hora
+  setlocale(LC_ALL, "es_ES.utf8");
+  strftime (buffer,80,"Hoy es %A, son las %H:%M%p",strTiempo);
+  std::cout << buffer << std::endl;
+
+
+
+}
+
+
 
 //El argv por si solo no hace nada. Luego cuando lo ejecutes tienes que pasarle un parámetro que es el localhost y el puerto
 //Ej: Redes 2 localhost [ip? puerto?]
@@ -13,23 +37,28 @@ int main (int argc, char **argv) {
 	struct addrinfo *res;
 
 	memset((void*) &hints, '\0', sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;
+	hints.ai_family = AF_INET;      //Porque es IPv4
 	hints.ai_socktype = SOCK_DGRAM; // DGRAM siempre es UDP
-
+	
+	//argv[1] = direccion , argv[2] = puerto(host)
 	int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
 
 	if (rc != 0) {
-		std::cout << "error getaddrinfo(): " << gai_strerror(c) << std::enddl;
+		std::cout << "error getaddrinfo(): " << gai_strerror(rc) << std::endl;
 		return -1;
 	}
 
-	int sd = socket(res->ai_addr, res->ai_addrlen);
+
+
+	int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 	bind (sd, res->ai_addr, res->ai_addrlen);
 
 	freeaddrinfo(res);
-
+	
+	
 	while(true) {
+
 		char buf[256];
 		struct sockaddr src_addr;
 		socklen_t addrlen;
@@ -37,57 +66,28 @@ int main (int argc, char **argv) {
 		char host [NI_MAXHOST];
 		char serv [NI_MAXSERV];
 		
+		//Recibe el input(el mensaje) del cliente (nosotros)
 		ssize_t s = recvfrom(sd, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
+		
+		getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+		
+	
+		  if (buf[0] ==  't')
+		    //llamar a DameHora
+		    std::cout << "Holi te doy la hora" << std::endl;
+		  	  
+		  else  if (buf[0] ==  'd')
+		    std::cout << "Holi te doy un dia" << std::endl;
 
-		getnameinfo(src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+	
+		  buf[s] = '\0';
 
-		std::cout << "Conexion: " << host << ":" <<	serv << "\n";
-		std::cout << "Mensaje: " << buf << std::endl;
+		  std::cout <<"Msj: " << buf << std::endl;
+		
 
-		sendto(/*En este caso solo hay un canal*/ sd, buf, s, 0, &src_addr, addrlen);
+		//sendto(/*En este caso solo hay un canal*/ sd, buf, s, 0, &src_addr, addrlen);
 
 	}
+
 	return 0;
 }
-int main(int argc, char **argv){
-
-  struct addrinfo hints;   //Sin puntero porque lo vamos a inicializar, y no queremos memoria dinamica
-  struct addrinfo *res;    //Aquí si nos interesa
-
-  memset((void*) &hints, '\0', sizeof(struct addrinfo)); //Inicializa a 0 el struct enterito
-  hints.ai_family = AF_INET;                             //Podría ser AF_UNSPEC, pero ponemos AF_INET para IPv4
-  hints.ai_socktype = SOCK_DGRAM;                        // DGRAM siempre es UDP
-
-  //Recibe: const char * Nodo, const char * service, addrinfo *hints, addrinfo**res 
-  //nodo = Host de internet, service = servicio
-  //Se genera una lista enlazada de structs, y a su vez se inicializa el puntero a res
-  int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
-
-  if (rc != 0) {
-    std::cout << "error getaddrinfo(): " << gai_strerror(rc) << std::endl;
-    return -1;
-  }
-  
-  // Esto es para las conexiones de mensajes y demás. Realmente no lo necesitamos ahora
-  //int sd = socket(res->ai_family ,res->ai_socktype, 0);
-  //bind (sd, res->ai_addr, res->ai_addrlen);
-  //-----------------------------------------------------------------
-
-  //Creamos otro addrinfo al que damos el valor de res para no modificar este, y vamos sacando los nombres
-  for(struct addrinfo* tmp = res; tmp !=0; tmp = tmp->ai_next){
-        //Máximas longitudes de host y serv(que ya te da el SO), y arrays de chars
-        char host[NI_MAXHOST];
-	char serv [NI_MAXSERV];
-	getnameinfo(tmp->ai_addr, tmp->ai_addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV); 
-	  
-	std::cout << host << "   " << tmp->ai_family << "   " << tmp->ai_socktype << std::endl;
-		
-    
-}
-  //Eliminamos memoria dinamica
-  freeaddrinfo(res);
-
-  return 0;
-
-}
-
