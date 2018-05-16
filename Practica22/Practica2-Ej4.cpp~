@@ -18,7 +18,7 @@ int main (int argc, char **argv) {
 
 	memset((void*) &hints, '\0', sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;      //Porque es IPv4
-	hints.ai_socktype = SOCK_STREAM; // STREAM siempre es TCP
+	hints.ai_socktype = SOCK_DGRAM; // DGRAM siempre es UDP
 	
 	//argv[1] = direccion , argv[2] = puerto(host)
 	int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
@@ -33,7 +33,6 @@ int main (int argc, char **argv) {
 	int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 	bind (sd, res->ai_addr, res->ai_addrlen);
-
 
 	//freeaddrinfo(res);
 	
