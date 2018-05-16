@@ -38,17 +38,7 @@ int main (int argc, char **argv) {
 	//LISTEN: Pone el server socket en modo pasivo, esperando que el cliente se conecte
 	//socket propio, y luego un int que son las conexiones pendientes en la cola del socket
 	//Si llega un request y la cola está llena, da error de tipo "ECONNREFUSED"
-	if(listen(sd, LISTEN_BACKLOG) == -1){
-	  std::cout << "error listen: " <<  perror("listen") << std::endl;
-	}
-
-	//ACCEPT: devuelve un socket nuevo que hace referencia a la conexión establecida (Es decir, tienes los dos sockets aqui)
-	//Extrae la primera conexion de la cola de conexiones pendientes, y la convierte en socket ya conectado.
-	//Es bloqueante, pero puedes usar select()
-	sockaddr* addr;
-	socklen_t* addrlen;
-	int socketCliente = accept(sd,addr, addrlen);
-	
+	listen(sd, 5);
 	
 	//Mientras el booleano salir sea falso se siguen mandando y recibiendo mensajes. Este solo se volverá true al darle a la Q
 	while(!salir) {
@@ -56,28 +46,40 @@ int main (int argc, char **argv) {
 		char buf[256];
 		struct sockaddr src_addr;
 		socklen_t addrlen = sizeof(src_addr); 
+		
+		//ACCEPT: devuelve un socket nuevo que hace referencia a la conexión establecida (Es decir, tienes los dos sockets aqui)
+		//Extrae la primera conexion de la cola de conexiones pendientes, y la convierte en socket ya conectado.
+		//Es bloqueante, pero puedes usar select()
+		//Aceptamos el siguiente en la cola
+		int socketCliente = accept(sd, &src_addr, &addrlen);
 
 		char host [NI_MAXHOST];
 		char serv [NI_MAXSERV];
 		
 		//Recibe el input(el mensaje) del cliente (nosotros)
 		//s = nº de bytes
-		ssize_t s = recvfrom(sd, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
+		ssize_t s = recvfrom(socketCliente, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
 		
 		//Inicializa en lo último que se ha recibido
 		buf[s]='\0';
 		
-		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
-		//Si has recibido bytes, s no es cero
-		if (s != 0){
-                      getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
-		      std::cout << s << " bytes de " << host << ":" << serv << std::endl;
+	
+		if (s == 0){
+		  salir = true;
 		}
 
-	       sendto(sd, buf, aux, 0, (struct sockaddr *) &src_addr, addrlen);
+		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
+		//Si has recibido bytes, s no es cero
+		getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+		std::cout << s << " bytes de " << host << ":" << serv << std::endl;
+
+		//Le paso el buf de nuevo, para que sea un eco.
+	       sendto(sd, buf, 256, 0, (struct sockaddr *) &src_addr, addrlen);
    
 	  
 	}
+
+	std::cout << "Conexión terminada" << std::endl;
 	freeaddrinfo(res);
 
 
