@@ -10,7 +10,6 @@
 
 
 //El argv por si solo no hace nada. Luego cuando lo ejecutes tienes que pasarle un parámetro que es el localhost y el puerto
-//Ej: Redes 2 localhost [ip? puerto?]
 int main (int argc, char **argv) {
 	struct addrinfo hints;
 	struct addrinfo *res;
@@ -18,7 +17,7 @@ int main (int argc, char **argv) {
 
 	memset((void*) &hints, '\0', sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;      //Porque es IPv4
-	hints.ai_socktype = SOCK_DGRAM; // DGRAM siempre es UDP
+	hints.ai_socktype = SOCK_STREAM; // STREAM es TCP
 	
 	//argv[1] = direccion , argv[2] = puerto(host)
 	//Res se rellena con los parametros de argv
@@ -51,35 +50,41 @@ int main (int argc, char **argv) {
 		//Extrae la primera conexion de la cola de conexiones pendientes, y la convierte en socket ya conectado.
 		//Es bloqueante, pero puedes usar select()
 		//Aceptamos el siguiente en la cola
-		int socketCliente = accept(sd, &src_addr, &addrlen);
+		size_t socketCliente = accept(sd, &src_addr, &addrlen);
 
 		char host [NI_MAXHOST];
 		char serv [NI_MAXSERV];
+
+		getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
+
+		//	std::cout << s << " bytes de " << host << ":" << serv << std::endl;
 		
 		//Recibe el input(el mensaje) del cliente (nosotros)
 		//s = nº de bytes
 		ssize_t s = recvfrom(socketCliente, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
 		
-		//Inicializa en lo último que se ha recibido
-		buf[s]='\0';
+		while(s > 0) {
+		  
+		  ssize_t s = recvfrom(socketCliente, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
+
+		  //Se le pasa el buf de nuevo, para que sea un eco.
+		  sendto(sd, buf, s, 0, (struct sockaddr *) &src_addr, addrlen);
+
+		}
 		
 	
 		if (s == 0){
-		  salir = true;
-		}
+		  std::cout << "La conexión ha finalizado \n";
+		    salir = true;
+		    }
 
 		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
 		//Si has recibido bytes, s no es cero
-		getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
-		std::cout << s << " bytes de " << host << ":" << serv << std::endl;
+		//	getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
 
-		//Le paso el buf de nuevo, para que sea un eco.
-	       sendto(sd, buf, 256, 0, (struct sockaddr *) &src_addr, addrlen);
-   
 	  
 	}
 
-	std::cout << "Conexión terminada" << std::endl;
 	freeaddrinfo(res);
 
 
