@@ -57,26 +57,38 @@ int main (int argc, char **argv) {
 
 		getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
 
-		//	std::cout << s << " bytes de " << host << ":" << serv << std::endl;
+		std::cout << "Conexión desde: " << host <<":" <<serv << std::endl;
 		
 		//Recibe el input(el mensaje) del cliente (nosotros)
 		//s = nº de bytes
-		ssize_t s = recvfrom(socketCliente, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
-		
-		while(s > 0) {
+		ssize_t s;
+		bool go = true;
+		do{
+
+		 
 		  
-		  ssize_t s = recvfrom(socketCliente, buf, 255, 0, /*IP y puerto del otro extremo (variable de salida)*/ &src_addr, /*argumento de entrada/salida*/&addrlen);
-
+		 s  = recv(socketCliente, buf, 255, 0);
+		  //Inicializa en lo último que se ha recibido
+		  buf[s]='\0';
+		
+		  if(buf[0] == 'Q'){
+		   go = false;
+		   // std::cout << "Me salgo" << std::endl;
+		  
+		 }
+	         else{
+		  // std::cout<< "BUFFER: "<< buf << std::endl;
 		  //Se le pasa el buf de nuevo, para que sea un eco.
-		  sendto(sd, buf, s, 0, (struct sockaddr *) &src_addr, addrlen);
+		 send(socketCliente, buf, s, 0);
+		 }
 
-		}
+		}while(s > 0 && go) ;
 		
 	
-		if (s == 0){
+		
 		  std::cout << "La conexión ha finalizado \n";
-		    salir = true;
-		    }
+		   salir = true;
+		    
 
 		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
 		//Si has recibido bytes, s no es cero
