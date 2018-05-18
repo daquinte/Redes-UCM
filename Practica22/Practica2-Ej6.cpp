@@ -12,10 +12,10 @@ class Thread{
 
 public:
   Thread(int socket){ threadSocket = socket;};
-  ~Thread(){};
+  virtual ~Thread(){};
 
 
-  void mandaMensaje(){
+  void do_message(){
     
 
     //Mientras el booleano salir sea falso se siguen mandando y recibiendo mensajes. Este solo se volverá true al darle a la Q
@@ -100,7 +100,7 @@ extern "C"
   void* start_routine(void* _thread){
 
     Thread* t = static_cast<Thread*>(_thread);
-    t-> mandaMensaje();
+    t-> do_message();
 
     delete t;
 
