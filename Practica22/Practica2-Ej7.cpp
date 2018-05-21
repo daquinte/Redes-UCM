@@ -44,7 +44,7 @@ public:
 
 		 
 		  
-		 s  = recv(socketCliente, buf, 255, 0);
+		 s  = recv(socketCliente, &buf, 255, 0);
 		  //Inicializa en lo último que se ha recibido
 		  buf[s]='\0';
 		
@@ -56,7 +56,7 @@ public:
 	         else{
 		  // std::cout<< "BUFFER: "<< buf << std::endl;
 		  //Se le pasa el buf de nuevo, para que sea un eco.
-		 send(socketCliente, buf, s, 0);
+		 send(socketCliente, &buf, s, 0);
 		 }
 
 		}while(s > 0 && go) ;
@@ -69,7 +69,7 @@ public:
 
 		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
 		//Si has recibido bytes, s no es cero
-		//	getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+		//getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
 
 	  
 	}
@@ -125,8 +125,9 @@ int main (int argc, char **argv) {
 	//LISTEN: Pone el server socket en modo pasivo, esperando que el cliente se conecte
 	//socket propio, y luego un int que son las conexiones pendientes en la cola del socket
 	//Si llega un request y la cola está llena, da error de tipo "ECONNREFUSED"
-	listen(sd, 5);
-
+	listen(sd, 15);
+	
+	//QUIZA SEA BUENA IDEA COGER EL ACCEPT DEL THREAD Y PASARLO AQUI, Y TENER SOLO UN WHILE EN EL THREAD :3
 
 	//Inicializamos el conjunto de threads (5 en principio por ejemplo)
 	int numThreads = 5;
