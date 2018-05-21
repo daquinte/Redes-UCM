@@ -6,16 +6,21 @@
 #include <iostream>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
+
+//Para que compile hay que usar -pthread
 
 
 class Thread{
 
 public:
-  Thread(int socket){ threadSocket = socket;};
+  Thread(int socket){ threadSocket = socket; salir = false;};
   virtual ~Thread(){};
 
 
   void do_message(){
+
+    
     
 
     //Mientras el booleano salir sea falso se siguen mandando y recibiendo mensajes. Este solo se volverá true al darle a la Q
@@ -36,14 +41,14 @@ public:
 		//Inicializa en lo último que se ha recibido
 		buf[s]='\0';
 		
-		//Si queremos mostrar en número de bytes se deberá hacer dentro de este if escribiendo el valor de s
+		
 		//Si has recibido bytes, s no es cero
 		if (s != 0){
                       getnameinfo(&src_addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
-		      std::cout << s << " bytes de " << host << ":" << serv << std::endl;
+		      std::cout << s << " bytes de " << host << ":" << serv << std::endl; //Bytes 
 		}
 
-		std::cout << "Thread: " << pthread_self() << "\n";
+		std::cout << "Thread: " << pthread_self() << "\n"; //ID del thread
 	       
 
 		int aux;
@@ -58,13 +63,13 @@ public:
 
 		//Si se pulsa la d se guarda el día, mes y año y se envia al cliente (src_addr)
 		case 'd':			
-		  aux = strftime(buf, 256 ,"Hoy es: %Y-%m-%d", strTiempo);
+		  aux = strftime(buf, 256 ,"Hoy es: %Y-%m-%d\n", strTiempo);
 		  sendto(threadSocket, buf, aux, 0, (struct sockaddr *) &src_addr, addrlen);
 		  break;
 
 		//Si se pulsa t se guarda la hora y se le envía al cliente (src_addr)
 		case 't':
-		  aux = strftime(buf, 256 ,"Son las: %H:%M:%S", strTiempo);
+		  aux = strftime(buf, 256 ,"Son las: %H:%M:%S\n", strTiempo);
 		  sendto(threadSocket, buf, aux, 0, (struct sockaddr *) &src_addr, addrlen);		
 		  break;
 
@@ -83,18 +88,20 @@ public:
 
 		//std::cout << s << " bytes de " << host << ":" << serv;
    
+		//Dejamos un tiempo de espera de 5 segundos para comprobar la concurrencia
 		sleep(5);	  
 
 	}
   }
 
 private:
-  int threadSocket;
-  bool salir = false;
+  int threadSocket; //Socket que usará cada thread
+  bool salir; //Booleano que mantiene acivo o no el bucle principal
+  
 
 };
 
-//Método llama al envio de mensajes de cada thread al inicio de la rutina
+//Método que llama al envio de mensajes de cada thread al inicio de la rutina y lo pasa a C para que funcione
 extern "C"
 {
   void* start_routine(void* _thread){
@@ -117,7 +124,7 @@ int main (int argc, char **argv) {
 
 	memset((void*) &hints, '\0', sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;      //Porque es IPv4
-	hints.ai_socktype = SOCK_STREAM; // STREAM siempre es TCP
+	hints.ai_socktype = SOCK_DGRAM; // DGRAM siempre es UDP
 	
 	//argv[1] = direccion , argv[2] = puerto(host)
 	int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
@@ -132,9 +139,6 @@ int main (int argc, char **argv) {
 	int sd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 	bind (sd, res->ai_addr, res->ai_addrlen);
-
-	//listen
-	listen(sd, 5);
 
 	freeaddrinfo(res);
 
@@ -156,11 +160,14 @@ int main (int argc, char **argv) {
 	  }
 
 	char c;
+
+	//Si se escribe q no lo guarda
+	if (c != 'q')
 	std::cin >> c;
 	
 	
-	//freeaddrinfo(res);
-
+	freeaddrinfo(res);
+	
 
 	return 0;
 }
