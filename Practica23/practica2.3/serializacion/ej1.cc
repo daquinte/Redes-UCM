@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 
 class Jugador: public Serializable
 {
@@ -21,16 +22,37 @@ public:
 
     void to_bin()
     {
+
+      int32_t total = 80* sizeof(char) +2*sizeof(int16_t);
+      alloc_data(total);
+
+      char* tmp = _data + sizeof(int32_t)
+
+      memcpy (tmp, name, 80);
+      tmp += 80;
+
+      memcpy(tmp, &pos_x, sizeof(int16_t);
+      tmp += sizeof(int16_t);
+      memcpy(tmp, &pos_y, sizeof(int16_t);
+
     }
 
     int from_bin(char * data)
     {
+
+      char* tmp = data + sizeof(int32_t);
+      memcpy(name, tmp, 80);
+
+      memcpy(&pos_x, tmp, sizeof(int16_t));
+      tmp += sizeof(int16_t);
+
+      memcpy(&pos_y, tmp, sizeof(int16_t));
     }
 
-  int16 getPosX () {return pos_x;}
-  int16 getPosY () {return pos_y;}
+	     // int16_t getPosX () {return pos_x;}
+	     //int16_t getPosY () {return pos_y;}
 
-  char* getName () {return name;}
+	     //char* getName () {return name;}
 
 
 private:
@@ -38,18 +60,32 @@ private:
   int16_t pos_x;
   int16_t pos_y;
 
-  char name[MAX_NAME];
   static const size_t MAX_NAME = 20;
+
+  char name[MAX_NAME];
+
 
 };
 
 int main(int argc, char **argv)
 {
 
-  Jugador* player = new Jugador("player one", 12, 345);
+  Jugador one("player one", 12, 345);
+  Jugador one_("-", 0, 0);
 
-  std::fstream fs;
-  fs.open ("Jugador1.txt", /*No sé qué poner aquí.com*/);
+  one.to_bin();
+
+  int op = open ("Jugador1.txt",/*Buscar el flag necesario*/ fstream::out);
+
+  write(op, one.data(), one.size());
+
+ close(op);
+
+ one_.from_bin(one.data());
+
+ 
+
+  return 0;
 
 
 }
